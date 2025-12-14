@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Graph Algorithms</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-project-diagram"></i> Visual Graph Algorithms</h1>
+            <p>Ứng dụng trực quan hóa đồ thị và các thuật toán</p>
+        </header>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="control-section">
+                    <h2><i class="fas fa-sliders-h"></i> Điều khiển</h2>
+                    
+                    <div class="control-group">
+                        <h3><i class="fas fa-draw-polygon"></i> Vẽ đồ thị</h3>
+                        <div class="btn-group">
+                            <button id="addNodeBtn" class="btn"><i class="fas fa-plus-circle"></i> Thêm đỉnh</button>
+                            <button id="addEdgeBtn" class="btn"><i class="fas fa-link"></i> Thêm cạnh</button>
+                            <button id="directedToggle" class="btn"><i class="fas fa-arrow-right"></i> Vô hướng</button>
+                            <button id="clearBtn" class="btn btn-danger"><i class="fas fa-trash"></i> Xóa tất cả</button>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h3><i class="fas fa-save"></i> Lưu/Tải đồ thị</h3>
+                        <div class="btn-group">
+                            <button id="saveGraphBtn" class="btn"><i class="fas fa-save"></i> Lưu đồ thị</button>
+                            <button id="loadGraphBtn" class="btn"><i class="fas fa-folder-open"></i> Tải đồ thị</button>
+                            <input type="file" id="graphFileInput" accept=".json" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h3><i class="fas fa-bullseye"></i> Thuật toán cơ bản</h3>
+                        <div class="btn-group">
+                            <button id="bfsBtn" class="btn"><i class="fas fa-search"></i> Duyệt BFS</button>
+                            <button id="dfsBtn" class="btn"><i class="fas fa-search"></i> Duyệt DFS</button>
+                            <button id="shortestPathBtn" class="btn"><i class="fas fa-route"></i> Đường đi ngắn nhất</button>
+                            <button id="bipartiteBtn" class="btn"><i class="fas fa-code-branch"></i> Kiểm tra 2 phía</button>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h3><i class="fas fa-exchange-alt"></i> Chuyển đổi biểu diễn</h3>
+                        <div class="btn-group">
+                            <button id="adjMatrixBtn" class="btn"><i class="fas fa-table"></i> Ma trận kề</button>
+                            <button id="adjListBtn" class="btn"><i class="fas fa-list"></i> Danh sách kề</button>
+                            <button id="edgeListBtn" class="btn"><i class="fas fa-project-diagram"></i> Danh sách cạnh</button>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h3><i class="fas fa-rocket"></i> Thuật toán nâng cao</h3>
+                        <select id="advancedAlgoSelect" class="form-control">
+                            <option value="">-- Chọn thuật toán --</option>
+                            <option value="prim">Prim (Cây khung nhỏ nhất)</option>
+                            <option value="kruskal">Kruskal (Cây khung nhỏ nhất)</option>
+                            <option value="fordFulkerson">Ford-Fulkerson (Luồng cực đại)</option>
+                            <option value="fleury">Fleury (Chu trình Euler)</option>
+                            <option value="hierholzer">Hierholzer (Chu trình Euler)</option>
+                        </select>
+                        <button id="runAdvancedAlgoBtn" class="btn btn-advanced"><i class="fas fa-play"></i> Chạy thuật toán</button>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h3><i class="fas fa-cog"></i> Cài đặt</h3>
+                        <div class="settings">
+                            <label>
+                                <input type="checkbox" id="showWeight" checked> Hiển thị trọng số
+                            </label>
+                            <label>
+                                <input type="checkbox" id="animateAlgo" checked> Hiệu ứng hoạt hình
+                            </label>
+                            <div class="speed-control">
+                                <label>Tốc độ hoạt hình:</label>
+                                <input type="range" id="animationSpeed" min="1" max="10" value="5">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <h2><i class="fas fa-info-circle"></i> Thông tin</h2>
+                    <div id="algorithmInfo">
+                        <p>Chọn một thuật toán để xem thông tin chi tiết.</p>
+                    </div>
+                    <div id="representationDisplay">
+                        <h3>Biểu diễn đồ thị</h3>
+                        <pre id="representationContent">Đồ thị trống</pre>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="graph-container">
+                <div class="canvas-container">
+                    <canvas id="graphCanvas" width="800" height="600"></canvas>
+                    <div class="canvas-overlay">
+                        <div class="stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Đỉnh:</span>
+                                <span id="nodeCount" class="stat-value">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Cạnh:</span>
+                                <span id="edgeCount" class="stat-value">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Trạng thái:</span>
+                                <span id="graphStatus" class="stat-value">Sẵn sàng</span>
+                            </div>
+                        </div>
+                        <div class="instructions">
+                            <p><i class="fas fa-mouse-pointer"></i> Nhấp để thêm đỉnh</p>
+                            <p><i class="fas fa-link"></i> Chọn 2 đỉnh để thêm cạnh</p>
+                            <p><i class="fas fa-arrows-alt"></i> Kéo để di chuyển đỉnh</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="algorithm-output">
+                    <h2><i class="fas fa-terminal"></i> Kết quả thuật toán</h2>
+                    <div id="outputContent">
+                        <p>Kết quả thuật toán sẽ hiển thị ở đây...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Ứng dụng Visual Graph Algorithms &copy; 2025 - Đồ án môn học</p>
+            <p class="hint"><i class="fas fa-lightbulb"></i> Ứng dụng hỗ trợ cả đồ thị vô hướng và có hướng</p>
+        </footer>
+    </div>
+
+    <div id="nodeModal" class="modal">
+        <div class="modal-content">
+            <h3>Thêm trọng số cho cạnh</h3>
+            <input type="number" id="edgeWeight" placeholder="Nhập trọng số (mặc định: 1)" min="1" value="1">
+            <div class="modal-buttons">
+                <button id="confirmEdgeBtn" class="btn">Xác nhận</button>
+                <button id="cancelEdgeBtn" class="btn btn-secondary">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+<script src="script.js"></script>
+<script src="algorithms.js"></script>
+</body>
+</html>

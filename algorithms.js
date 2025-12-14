@@ -530,95 +530,112 @@ class GraphAlgorithms {
         };
     }
 
-    // Thuật toán Fleury (Tìm chu trình Euler)
-    async fleury() {
-        if (this.graph.nodes.length === 0) {
-            this.graph.showMessage("Đồ thị trống!");
-            return null;
-        }
-
-        // Kiểm tra điều kiện đồ thị Euler
-        const degrees = new Array(this.graph.nodes.length).fill(0);
-        for (const edge of this.graph.edges) {
-            degrees[edge.from]++;
-            if (!this.graph.isDirected) {
-                degrees[edge.to]++;
-            }
-        }
-
-        let oddCount = 0;
-        let startNode = 0;
-        for (let i = 0; i < degrees.length; i++) {
-            if (degrees[i] % 2 !== 0) {
-                oddCount++;
-                startNode = i;
-            }
-        }
-
-        if (oddCount > 2) {
-            this.graph.showMessage("Đồ thị không có chu trình Euler!");
-            return null;
-        }
-
-        // Tạo bản sao của các cạnh
-        const edgeCount = new Map();
-        for (const edge of this.graph.edges) {
-            const key = `${Math.min(edge.from, edge.to)}-${Math.max(edge.from, edge.to)}`;
-            edgeCount.set(key, (edgeCount.get(key) || 0) + 1);
-        }
-
-        const circuit = [];
-        const currPath = [startNode];
-        const n = this.graph.nodes.length;
-
-        while (currPath.length > 0) {
-            const u = currPath[currPath.length - 1];
-            let foundEdge = false;
-
-            for (let v = 0; v < n; v++) {
-                const key = `${Math.min(u, v)}-${Math.max(u, v)}`;
-                if (edgeCount.get(key) > 0) {
-                    // Kiểm tra xem cạnh này có phải là cầu không
-                    edgeCount.set(key, edgeCount.get(key) - 1);
-                    
-                    if (this.isBridge(u, v, new Map(edgeCount))) {
-                        edgeCount.set(key, edgeCount.get(key) + 1);
-                        continue;
-                    }
-
-                    // Thêm cạnh vào đường đi
-                    currPath.push(v);
-                    circuit.push({ from: u, to: v });
-                    
-                    // Đánh dấu cạnh
-                    const edge = this.graph.edges.find(e => 
-                        (e.from === u && e.to === v) || (e.from === v && e.to === u));
-                    if (edge) {
-                        edge.color = '#9b59b6';
-                        edge.highlighted = true;
-                        this.graph.drawGraph();
-                        await this.delay(500);
-                    }
-                    
-                    foundEdge = true;
-                    break;
-                }
-            }
-
-            if (!foundEdge) {
-                circuit.push({ from: u, to: currPath[0] });
-                currPath.pop();
-            }
-        }
-
-        return {
-            eulerCircuit: circuit.map(edge => ({
-                from: this.graph.nodes[edge.from].label,
-                to: this.graph.nodes[edge.to].label
-            })),
-            hasEulerCircuit: oddCount === 0
-        };
+   // Thuật toán Fleury – tìm chu trình Euler (đồ thị vô hướng)
+async fleury() {
+    const n = this.graph.nodes.length;
+    if (n === 0) {
+        this.graph.showMessage("Đồ thị trống!");
+        return null;
     }
+
+    // 1. Tạo adjacency list
+    const adj = Array.from({ length: n }, () => []);
+    for (const e of this.graph.edges) {
+        adj[e.from].push(e.to);
+        adj[e.to].push(e.from);
+    }
+
+    // 2. Kiểm tra điều kiện Euler
+    const odd = [];
+    for (let i = 0; i < n; i++) {
+        if (adj[i].length % 2 !== 0) odd.push(i);
+    }
+
+    if (odd.length !== 0 && odd.length !== 2) {
+        this.graph.showMessage("Đồ thị không có chu trình Euler!");
+        return null;
+    }
+
+    // 3. Chọn đỉnh bắt đầu
+    let u = odd.length === 2 ? odd[0] : 0;
+    const circuit = [];
+
+    // 4. Fleury
+    while (adj[u].length > 0) {
+        let v = adj[u][0];
+
+        for (const candidate of adj[u]) {
+            if (
+                adj[u].length === 1 ||
+                !this.isBridgeFleury(u, candidate, adj)
+            ) {
+                v = candidate;
+                break;
+            }
+        }
+
+        // Xóa cạnh u - v
+        adj[u].splice(adj[u].indexOf(v), 1);
+        adj[v].splice(adj[v].indexOf(u), 1);
+
+        circuit.push({ from: u, to: v });
+
+        // Trực quan hóa
+        const edge = this.graph.edges.find(e =>
+            (e.from === u && e.to === v) ||
+            (e.from === v && e.to === u)
+        );
+        if (edge) {
+            edge.color = "#9b59b6";
+            edge.highlighted = true;
+            this.graph.drawGraph();
+            await this.delay(500);
+        }
+
+        u = v;
+    }
+
+    return {
+        hasEulerCircuit: odd.length === 0,
+        eulerCircuit: circuit.map(e => ({
+            from: this.graph.nodes[e.from].label,
+            to: this.graph.nodes[e.to].label
+        }))
+    };
+}
+isBridgeFleury(u, v, adj) {
+    // Nếu chỉ còn 1 cạnh thì không coi là cầu
+    if (adj[u].length === 1) return false;
+
+    const visited = new Array(adj.length).fill(false);
+
+    const dfs = (x) => {
+        visited[x] = true;
+        for (const y of adj[x]) {
+            if (!visited[y]) dfs(y);
+        }
+    };
+
+    // Số đỉnh reachable trước khi xóa
+    dfs(u);
+    const count1 = visited.filter(x => x).length;
+
+    // Tạm xóa cạnh
+    adj[u].splice(adj[u].indexOf(v), 1);
+    adj[v].splice(adj[v].indexOf(u), 1);
+
+    visited.fill(false);
+    dfs(u);
+    const count2 = visited.filter(x => x).length;
+
+    // Khôi phục cạnh
+    adj[u].push(v);
+    adj[v].push(u);
+
+    // Nếu giảm số đỉnh reachable → là cầu
+    return count2 < count1;
+}
+
 
     // Thuật toán Hierholzer (Tìm chu trình Euler)
     async hierholzer() {
